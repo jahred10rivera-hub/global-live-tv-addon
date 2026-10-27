@@ -18,11 +18,17 @@ const manifest = {
   types: ["tv"],
   idPrefixes: ["gltv:"],
   catalogs: [
-    {
-      type: "tv",
-      id: "global_live",
-      name: "Global Live TV",
-      extra: [{ name: "search", isRequired: false }]
+  { type: "tv", id: "global_live", name: "Global Live TV", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "us_live", name: "United States", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "animation", name: "Animation", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "kids", name: "Kids & Family", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "entertainment", name: "Entertainment", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "movies", name: "Movies", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "news", name: "News", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "music", name: "Music", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "english", name: "English Language", extra: [{ name: "search", isRequired: false }] },
+  { type: "tv", id: "spanish", name: "Spanish Language", extra: [{ name: "search", isRequired: false }] }
+],
     }
   ],
   behaviorHints: { configurable: false, configurationRequired: false }
