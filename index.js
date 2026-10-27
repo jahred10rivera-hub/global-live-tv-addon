@@ -1,102 +1,244 @@
 const { addonBuilder, serveHTTP } = require("stremio-addon-sdk");
 const crypto = require("crypto");
 
-const PLAYLIST_URL = "https://iptv-org.github.io/iptv/index.m3u";
 const PORT = Number(process.env.PORT || 7000);
 const CACHE_MS = 15 * 60 * 1000;
 
-let cachedChannels = [];
-let lastFetch = 0;
+const SOURCES = {
+  global_live: {
+    name: "Global Live TV",
+    url: "https://iptv-org.github.io/iptv/index.m3u"
+  },
+  us_live: {
+    name: "United States",
+    url: "https://iptv-org.github.io/iptv/countries/us.m3u"
+  },
+  animation: {
+    name: "Animation",
+    url: "https://iptv-org.github.io/iptv/categories/animation.m3u"
+  },
+  kids: {
+    name: "Kids & Family",
+    url: "https://iptv-org.github.io/iptv/categories/kids.m3u"
+  },
+  entertainment: {
+    name: "Entertainment",
+    url: "https://iptv-org.github.io/iptv/categories/entertainment.m3u"
+  },
+  movies: {
+    name: "Movies",
+    url: "https://iptv-org.github.io/iptv/categories/movies.m3u"
+  },
+  news: {
+    name: "News",
+    url: "https://iptv-org.github.io/iptv/categories/news.m3u"
+  },
+  music: {
+    name: "Music",
+    url: "https://iptv-org.github.io/iptv/categories/music.m3u"
+  },
+  english: {
+    name: "English Language",
+    url: "https://iptv-org.github.io/iptv/languages/eng.m3u"
+  },
+  spanish: {
+    name: "Spanish Language",
+    url: "https://iptv-org.github.io/iptv/languages/spa.m3u"
+  }
+};
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "1.0.0",
+  version: "1.1.0",
   name: "Global Live TV",
-  description: "Worldwide live TV directory using publicly listed streams. Availability and rights vary by channel and country.",
+  description:
+    "Live TV directory from publicly listed streams. Availability, licensing, and geographic access vary by channel.",
   logo: "https://www.stremio.com/website/stremio-logo-small.png",
   resources: ["catalog", "meta", "stream"],
   types: ["tv"],
   idPrefixes: ["gltv:"],
-  catalogs: [
-  { type: "tv", id: "global_live", name: "Global Live TV", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "us_live", name: "United States", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "animation", name: "Animation", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "kids", name: "Kids & Family", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "entertainment", name: "Entertainment", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "movies", name: "Movies", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "news", name: "News", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "music", name: "Music", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "english", name: "English Language", extra: [{ name: "search", isRequired: false }] },
-  { type: "tv", id: "spanish", name: "Spanish Language", extra: [{ name: "search", isRequired: false }] }
-],
-    }
-  ],
-  behaviorHints: { configurable: false, configurationRequired: false }
+  catalogs: Object.entries(SOURCES).map(([id, source]) => ({
+    type: "tv",
+    id,
+    name: source.name,
+    extra: [{ name: "search", isRequired: false }]
+  })),
+  behaviorHints: {
+    configurable: false,
+    configurationRequired: false
+  }
 };
 
 function attr(line, key) {
-  const re = new RegExp(key + '="([^"]*)"', "i");
-  const m = line.match(re);
-  return m ? m[1].trim() : "";
+  const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const re = new RegExp(escapedKey + '="([^"]*)"', "i");
+  const match = line.match(re);
+  return match ? match[1].trim() : "";
 }
+
 function makeId(name, url) {
-  return "gltv:" + crypto.createHash("sha1").update(name + "|" + url).digest("hex").slice(0, 18);
+  return (
+    "gltv:" +
+    crypto.createHash("sha1")
+      .update(name + "|" + url)
+      .digest("hex")
+      .slice(0, 18)
+  );
 }
+
 function parseM3U(text) {
   const lines = text.split(/\r?\n/);
-  const out = [];
+  const channels = [];
   let info = "";
+
   for (const raw of lines) {
     const line = raw.trim();
+
     if (!line) continue;
-    if (line.startsWith("#EXTINF")) { info = line; continue; }
+
+    if (line.startsWith("#EXTINF")) {
+      info = line;
+      continue;
+    }
+
     if (line.startsWith("#")) continue;
+
     if (/^https?:\/\//i.test(line) && info) {
       const comma = info.lastIndexOf(",");
-      const name = comma >= 0 ? info.slice(comma + 1).trim() : (attr(info, "tvg-name") || "Live channel");
-      const channel = {
-        id: makeId(name, line),
-        name: name || attr(info, "tvg-name") || "Live channel",
+
+      const displayName =
+        comma >= 0
+          ? info.slice(comma + 1).trim()
+          : attr(info, "tvg-name") || "Live channel";
+
+      channels.push({
+        id: makeId(displayName, line),
+        name:
+          displayName ||
+          attr(info, "tvg-name") ||
+          "Live channel",
         url: line,
         logo: attr(info, "tvg-logo"),
         country: attr(info, "tvg-country"),
         language: attr(info, "tvg-language"),
         group: attr(info, "group-title"),
         tvgId: attr(info, "tvg-id")
-      };
-      out.push(channel);
+      });
+
       info = "";
     }
   }
-  // Deduplicate repeated name/URL records while retaining distinct stream URLs.
-  return out;
+
+  return channels;
 }
-async function getChannels() {
-  if (cachedChannels.length && Date.now() - lastFetch < CACHE_MS) return cachedChannels;
-  const res = await fetch(PLAYLIST_URL, { headers: { "User-Agent": "GlobalLiveTV-StremioAddon/1.0" } });
-  if (!res.ok) throw new Error("Playlist request failed: HTTP " + res.status);
-  const text = await res.text();
-  const parsed = parseM3U(text);
-  if (!parsed.length) throw new Error("No channels parsed from playlist");
-  cachedChannels = parsed;
-  lastFetch = Date.now();
-  return cachedChannels;
+
+const channelCache = {};
+
+async function getChannels(sourceKey = "global_live") {
+  const source = SOURCES[sourceKey];
+
+  if (!source) {
+    throw new Error(
+      "Unknown channel category: " + sourceKey
+    );
+  }
+
+  const cached = channelCache[sourceKey];
+
+  if (cached && Date.now() - cached.time < CACHE_MS) {
+    return cached.channels;
+  }
+
+  const response = await fetch(source.url, {
+    headers: {
+      "User-Agent": "GlobalLiveTV-StremioAddon/1.1"
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error(
+      "Playlist request failed for " +
+      sourceKey +
+      ": HTTP " +
+      response.status
+    );
+  }
+
+  const text = await response.text();
+  const channels = parseM3U(text);
+
+  if (!channels.length) {
+    throw new Error(
+      "No channels parsed from playlist: " + sourceKey
+    );
+  }
+
+  channelCache[sourceKey] = {
+    channels,
+    time: Date.now()
+  };
+
+  return channels;
 }
-function toMeta(ch) {
-  const extras = [ch.country, ch.language, ch.group].filter(Boolean);
+
+async function findChannelById(id) {
+  // Search playlists already loaded.
+  for (const entry of Object.values(channelCache)) {
+    const found = entry.channels.find(
+      (channel) => channel.id === id
+    );
+
+    if (found) return found;
+  }
+
+  // If necessary, search the other categories.
+  for (const sourceKey of Object.keys(SOURCES)) {
+    try {
+      const channels = await getChannels(sourceKey);
+
+      const found = channels.find(
+        (channel) => channel.id === id
+      );
+
+      if (found) return found;
+    } catch (error) {
+      console.error(
+        "Could not search source",
+        sourceKey,
+        error.message
+      );
+    }
+  }
+
+  return null;
+}
+
+function toMeta(channel) {
+  const details = [
+    channel.country
+      ? "Country/area: " + channel.country
+      : "",
+    channel.language
+      ? "Language: " + channel.language
+      : "",
+    channel.group
+      ? "Category: " + channel.group
+      : "",
+    "Source: publicly listed IPTV-org playlist. Streams may be offline or geo-restricted."
+  ].filter(Boolean);
+
   return {
-    id: ch.id,
+    id: channel.id,
     type: "tv",
-    name: ch.name,
-    poster: ch.logo || undefined,
+    name: channel.name,
+    poster: channel.logo || undefined,
     posterShape: "landscape",
-    description: [
-      ch.country ? "Country/area: " + ch.country : "",
-      ch.language ? "Language: " + ch.language : "",
-      ch.group ? "Category: " + ch.group : "",
-      "Source: iptv-org public playlist. Streams may be offline or geo-restricted."
-    ].filter(Boolean).join("\n"),
-    genres: extras.slice(0, 3),
+    description: details.join("\n"),
+    genres: [
+      channel.group,
+      channel.language,
+      channel.country
+    ].filter(Boolean).slice(0, 3),
     runtime: "Live"
   };
 }
@@ -105,50 +247,107 @@ const builder = new addonBuilder(manifest);
 
 builder.defineCatalogHandler(async (args) => {
   try {
-    const all = await getChannels();
-    const search = String((args.extra && args.extra.search) || "").trim().toLowerCase();
+    const sourceKey = SOURCES[args.id]
+      ? args.id
+      : "global_live";
+
+    const allChannels = await getChannels(sourceKey);
+
+    const search = String(
+      (args.extra && args.extra.search) || ""
+    ).trim().toLowerCase();
+
     const filtered = search
-      ? all.filter(c => [c.name, c.country, c.language, c.group, c.tvgId].join(" ").toLowerCase().includes(search))
-      : all;
-    const skip = Math.max(0, Number((args.extra && args.extra.skip) || 0));
-    const metas = filtered.slice(skip, skip + 100).map(toMeta);
-    return { metas };
-  } catch (e) {
-    console.error(e);
+      ? allChannels.filter((channel) =>
+          [
+            channel.name,
+            channel.country,
+            channel.language,
+            channel.group,
+            channel.tvgId
+          ]
+            .join(" ")
+            .toLowerCase()
+            .includes(search)
+        )
+      : allChannels;
+
+    const skip = Math.max(
+      0,
+      Number((args.extra && args.extra.skip) || 0)
+    );
+
+    return {
+      metas: filtered
+        .slice(skip, skip + 100)
+        .map(toMeta)
+    };
+  } catch (error) {
+    console.error("Catalog error:", error);
     return { metas: [] };
   }
 });
 
 builder.defineMetaHandler(async ({ id }) => {
   try {
-    const channels = await getChannels();
-    const ch = channels.find(c => c.id === id);
-    return { meta: ch ? { ...toMeta(ch), videos: [{ id: ch.id, title: "Watch live", released: new Date().toISOString().slice(0, 10) }] } : null };
-  } catch (e) {
-    console.error(e);
+    const channel = await findChannelById(id);
+
+    if (!channel) {
+      return { meta: null };
+    }
+
+    return {
+      meta: {
+        ...toMeta(channel),
+        videos: [
+          {
+            id: channel.id,
+            title: "Watch live",
+            released: new Date()
+              .toISOString()
+              .slice(0, 10)
+          }
+        ]
+      }
+    };
+  } catch (error) {
+    console.error("Meta error:", error);
     return { meta: null };
   }
 });
 
 builder.defineStreamHandler(async ({ id }) => {
   try {
-    const channels = await getChannels();
-    const ch = channels.find(c => c.id === id);
-    if (!ch) return { streams: [] };
+    const channel = await findChannelById(id);
+
+    if (!channel) {
+      return { streams: [] };
+    }
+
     return {
-      streams: [{
-        title: "Live stream" + (ch.country ? " · " + ch.country : ""),
-        name: "Global Live TV",
-        url: ch.url,
-        behaviorHints: { notWebReady: false }
-      }]
+      streams: [
+        {
+          title:
+            "Live stream" +
+            (channel.country
+              ? " · " + channel.country
+              : ""),
+          name: "Global Live TV",
+          url: channel.url,
+          behaviorHints: {
+            notWebReady: false
+          }
+        }
+      ]
     };
-  } catch (e) {
-    console.error(e);
+  } catch (error) {
+    console.error("Stream error:", error);
     return { streams: [] };
   }
 });
 
 serveHTTP(builder.getInterface(), { port: PORT });
-console.log(`Global Live TV addon running on http://localhost:${PORT}/manifest.json`);
-console.log("For use on your iPad, deploy this server to a public HTTPS host, then install its /manifest.json URL in Stremio.");
+
+console.log(
+  "Global Live TV addon running on port " + PORT
+);
