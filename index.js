@@ -5,51 +5,70 @@ const PORT = Number(process.env.PORT || 7000);
 const CACHE_MS = 15 * 60 * 1000;
 
 const SOURCES = {
-  all: ["All Public Channels", "https://iptv-org.github.io/iptv/index.m3u"],
-  us: ["United States", "https://iptv-org.github.io/iptv/countries/us.m3u"],
-  pr: ["Puerto Rico", "https://iptv-org.github.io/iptv/countries/pr.m3u"],
-
-  animation: ["Animation", "https://iptv-org.github.io/iptv/categories/animation.m3u"],
-  kids: ["Kids", "https://iptv-org.github.io/iptv/categories/kids.m3u"],
-  family: ["Family", "https://iptv-org.github.io/iptv/categories/family.m3u"],
-  entertainment: ["Entertainment", "https://iptv-org.github.io/iptv/categories/entertainment.m3u"],
-  movies: ["Movies", "https://iptv-org.github.io/iptv/categories/movies.m3u"],
-  series: ["Series", "https://iptv-org.github.io/iptv/categories/series.m3u"],
-  comedy: ["Comedy", "https://iptv-org.github.io/iptv/categories/comedy.m3u"],
-  news: ["News", "https://iptv-org.github.io/iptv/categories/news.m3u"],
-  music: ["Music", "https://iptv-org.github.io/iptv/categories/music.m3u"],
-  sports: ["Sports", "https://iptv-org.github.io/iptv/categories/sports.m3u"],
-  documentary: ["Documentary", "https://iptv-org.github.io/iptv/categories/documentary.m3u"],
-  education: ["Education", "https://iptv-org.github.io/iptv/categories/education.m3u"],
-  cooking: ["Cooking", "https://iptv-org.github.io/iptv/categories/cooking.m3u"],
-  culture: ["Culture", "https://iptv-org.github.io/iptv/categories/culture.m3u"],
-  lifestyle: ["Lifestyle", "https://iptv-org.github.io/iptv/categories/lifestyle.m3u"],
-  travel: ["Travel", "https://iptv-org.github.io/iptv/categories/travel.m3u"],
-  science: ["Science", "https://iptv-org.github.io/iptv/categories/science.m3u"],
-  weather: ["Weather", "https://iptv-org.github.io/iptv/categories/weather.m3u"],
-  religious: ["Religious", "https://iptv-org.github.io/iptv/categories/religious.m3u"],
-  public: ["Public TV", "https://iptv-org.github.io/iptv/categories/public.m3u"],
-  general: ["General", "https://iptv-org.github.io/iptv/categories/general.m3u"],
-
-  english: ["English", "https://iptv-org.github.io/iptv/languages/eng.m3u"],
-  spanish: ["Spanish", "https://iptv-org.github.io/iptv/languages/spa.m3u"],
-  portuguese: ["Portuguese", "https://iptv-org.github.io/iptv/languages/por.m3u"],
-  french: ["French", "https://iptv-org.github.io/iptv/languages/fra.m3u"],
-  italian: ["Italian", "https://iptv-org.github.io/iptv/languages/ita.m3u"],
-  japanese: ["Japanese", "https://iptv-org.github.io/iptv/languages/jpn.m3u"],
-  korean: ["Korean", "https://iptv-org.github.io/iptv/languages/kor.m3u"],
-
-  americas: ["Americas", "https://iptv-org.github.io/iptv/regions/amer.m3u"],
-  caribbean: ["Caribbean", "https://iptv-org.github.io/iptv/regions/carib.m3u"],
-  latin_america: ["Latin America", "https://iptv-org.github.io/iptv/regions/latam.m3u"],
-  worldwide: ["Worldwide", "https://iptv-org.github.io/iptv/regions/ww.m3u"]
+  pr: {
+    name: "🇵🇷 Puerto Rico Local",
+    url: "https://iptv-org.github.io/iptv/countries/pr.m3u"
+  },
+  us: {
+    name: "🇺🇸 USA TV",
+    url: "https://iptv-org.github.io/iptv/countries/us.m3u"
+  },
+  us_news: {
+    name: "USA News",
+    url: "https://iptv-org.github.io/iptv/categories/news.m3u"
+  },
+  kids: {
+    name: "Kids & Cartoons",
+    url: "https://iptv-org.github.io/iptv/categories/kids.m3u"
+  },
+  animation: {
+    name: "Animation",
+    url: "https://iptv-org.github.io/iptv/categories/animation.m3u"
+  },
+  movies: {
+    name: "Movies",
+    url: "https://iptv-org.github.io/iptv/categories/movies.m3u"
+  },
+  entertainment: {
+    name: "Entertainment",
+    url: "https://iptv-org.github.io/iptv/categories/entertainment.m3u"
+  },
+  music: {
+    name: "Music",
+    url: "https://iptv-org.github.io/iptv/categories/music.m3u"
+  },
+  sports: {
+    name: "Sports",
+    url: "https://iptv-org.github.io/iptv/categories/sports.m3u"
+  },
+  spanish: {
+    name: "Spanish Language",
+    url: "https://iptv-org.github.io/iptv/languages/spa.m3u"
+  },
+  english: {
+    name: "English Language",
+    url: "https://iptv-org.github.io/iptv/languages/eng.m3u"
+  },
+  caribbean: {
+    name: "Caribbean TV",
+    url: "https://iptv-org.github.io/iptv/regions/carib.m3u"
+  },
+  americas: {
+    name: "Americas TV",
+    url: "https://iptv-org.github.io/iptv/regions/amer.m3u"
+  },
+  world: {
+    name: "World TV",
+    url: "https://iptv-org.github.io/iptv/index.m3u"
+  }
 };
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "2.0.0",
-  name: "Global Live TV",
-  description: "Public live TV directory organized by country, language, region, and category.",
+  version: "3.0.0",
+  name: "USA TV + Puerto Rico",
+  description:
+    "Public live TV streams from Puerto Rico, the United States, and worldwide categories.",
   logo: "https://www.stremio.com/website/stremio-logo-small.png",
   resources: ["catalog", "meta", "stream"],
   types: ["tv"],
@@ -57,7 +76,7 @@ const manifest = {
   catalogs: Object.entries(SOURCES).map(([id, source]) => ({
     type: "tv",
     id,
-    name: source[0],
+    name: source.name,
     extra: [{ name: "search", isRequired: false }]
   })),
   behaviorHints: {
@@ -74,11 +93,11 @@ function attr(line, key) {
 }
 
 function makeId(name, url) {
-  return "gltv:" + crypto
-    .createHash("sha1")
-    .update(name + "|" + url)
-    .digest("hex")
-    .slice(0, 18);
+  return "gltv:" +
+    crypto.createHash("sha1")
+      .update(name + "|" + url)
+      .digest("hex")
+      .slice(0, 18);
 }
 
 function parseM3U(text) {
@@ -88,6 +107,7 @@ function parseM3U(text) {
 
   for (const raw of lines) {
     const line = raw.trim();
+
     if (!line) continue;
 
     if (line.startsWith("#EXTINF")) {
@@ -118,7 +138,6 @@ function parseM3U(text) {
     }
   }
 
-  // Remove exact duplicate IDs.
   return [...new Map(channels.map(c => [c.id, c])).values()];
 }
 
@@ -126,25 +145,35 @@ const cache = {};
 
 async function getChannels(sourceId) {
   const source = SOURCES[sourceId];
-  if (!source) throw new Error("Unknown source: " + sourceId);
+
+  if (!source) {
+    throw new Error("Unknown source: " + sourceId);
+  }
 
   const cached = cache[sourceId];
+
   if (cached && Date.now() - cached.time < CACHE_MS) {
     return cached.channels;
   }
 
-  const response = await fetch(source[1], {
-    headers: { "User-Agent": "GlobalLiveTV/2.0" }
+  const response = await fetch(source.url, {
+    headers: {
+      "User-Agent": "GlobalLiveTV/3.0"
+    },
+    signal: AbortSignal.timeout(20000)
   });
 
   if (!response.ok) {
-    throw new Error("Playlist failed: HTTP " + response.status);
+    throw new Error(
+      "Playlist error " + response.status + " for " + sourceId
+    );
   }
 
-  const channels = parseM3U(await response.text());
+  const text = await response.text();
+  const channels = parseM3U(text);
 
   if (!channels.length) {
-    throw new Error("No channels found in " + sourceId);
+    throw new Error("No channels found for " + sourceId);
   }
 
   cache[sourceId] = {
@@ -156,31 +185,20 @@ async function getChannels(sourceId) {
 }
 
 async function findChannel(id) {
-  // The main playlist contains the broadest selection.
-  const cachedMain = cache.all;
-  if (cachedMain) {
-    const found = cachedMain.channels.find(c => c.id === id);
+  for (const entry of Object.values(cache)) {
+    const found = entry.channels.find(c => c.id === id);
     if (found) return found;
   }
 
-  try {
-    const main = await getChannels("all");
-    const found = main.find(c => c.id === id);
-    if (found) return found;
-  } catch (error) {
-    console.error("Main playlist lookup failed:", error.message);
-  }
-
-  // Search other lists if a channel is absent from the main list.
   for (const sourceId of Object.keys(SOURCES)) {
-    if (sourceId === "all") continue;
-
     try {
       const channels = await getChannels(sourceId);
       const found = channels.find(c => c.id === id);
       if (found) return found;
     } catch (error) {
-      console.error(sourceId + " lookup failed:", error.message);
+      console.error(
+        "Could not load " + sourceId + ": " + error.message
+      );
     }
   }
 
@@ -198,10 +216,13 @@ function toMeta(channel) {
       channel.country ? "Country: " + channel.country : "",
       channel.language ? "Language: " + channel.language : "",
       channel.group ? "Category: " + channel.group : "",
-      "Public listing; stream availability and access may vary."
+      "Public listing. Availability may vary."
     ].filter(Boolean).join("\n"),
-    genres: [channel.group, channel.language, channel.country]
-      .filter(Boolean).slice(0, 3),
+    genres: [
+      channel.group,
+      channel.language,
+      channel.country
+    ].filter(Boolean).slice(0, 3),
     runtime: "Live"
   };
 }
@@ -210,20 +231,29 @@ const builder = new addonBuilder(manifest);
 
 builder.defineCatalogHandler(async args => {
   try {
-    const sourceId = SOURCES[args.id] ? args.id : "all";
+    const sourceId = SOURCES[args.id] ? args.id : "pr";
     const channels = await getChannels(sourceId);
-    const search = String(args.extra?.search || "").trim().toLowerCase();
+
+    const search = String(
+      (args.extra && args.extra.search) || ""
+    ).trim().toLowerCase();
 
     const filtered = search
       ? channels.filter(c =>
-          [c.name, c.country, c.language, c.group, c.tvgId]
-            .join(" ")
-            .toLowerCase()
-            .includes(search)
+          [
+            c.name,
+            c.country,
+            c.language,
+            c.group,
+            c.tvgId
+          ].join(" ").toLowerCase().includes(search)
         )
       : channels;
 
-    const skip = Math.max(0, Number(args.extra?.skip || 0));
+    const skip = Math.max(
+      0,
+      Number((args.extra && args.extra.skip) || 0)
+    );
 
     return {
       metas: filtered.slice(skip, skip + 100).map(toMeta)
@@ -237,6 +267,7 @@ builder.defineCatalogHandler(async args => {
 builder.defineMetaHandler(async ({ id }) => {
   try {
     const channel = await findChannel(id);
+
     if (!channel) return { meta: null };
 
     return {
@@ -258,15 +289,18 @@ builder.defineMetaHandler(async ({ id }) => {
 builder.defineStreamHandler(async ({ id }) => {
   try {
     const channel = await findChannel(id);
+
     if (!channel) return { streams: [] };
 
     return {
       streams: [{
         title: "Live stream" +
           (channel.country ? " · " + channel.country : ""),
-        name: "Global Live TV",
+        name: "USA TV + Puerto Rico",
         url: channel.url,
-        behaviorHints: { notWebReady: false }
+        behaviorHints: {
+          notWebReady: false
+        }
       }]
     };
   } catch (error) {
@@ -276,4 +310,5 @@ builder.defineStreamHandler(async ({ id }) => {
 });
 
 serveHTTP(builder.getInterface(), { port: PORT });
-console.log("Global Live TV running on port " + PORT);
+
+console.log("USA TV + Puerto Rico running on port " + PORT);
