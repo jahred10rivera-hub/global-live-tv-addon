@@ -109,7 +109,7 @@ const VOD_CATALOGS = [
 ];
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "7.0.0",
+  version: "7.0.1",
   name: "Global Live TV + Cine",
   description: "Canales en vivo y catálogo global de películas, series y anime con metadatos.",
   resources: ["catalog", "meta", "stream"],
