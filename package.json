@@ -1,9 +1,16 @@
+
 {
-  "name": "global-live-tv-stremio-addon",
-  "version": "1.0.0",
-  "description": "Stremio addon for publicly listed worldwide live TV streams from iptv-org",
-  "main": "index.js",
-  "scripts": { "start": "node index.js" },
-  "engines": { "node": ">=18" },
-  "dependencies": { "stremio-addon-sdk": "^1.6.10" }
+  "name": "global-live-tv-addon",
+  "version": "6.0.0",
+  "description": "Global Live TV - canales de Puerto Rico y Estados Unidos para Stremio",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "stremio-addon-sdk": "^1.6.10"
+  }
 }
