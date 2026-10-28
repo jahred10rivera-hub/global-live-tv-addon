@@ -7,11 +7,6 @@ const CACHE_MS = 30 * 60 * 1000;
 
 const CATALOGS = [
   {
-    id: "live_all",
-    name: "🌍 Todos los Canales (Global)",
-    url: "https://iptv-org.github.io/iptv/index.m3u"
-  },
-  {
     id: "live_spa",
     name: "🗣️ Español (Todo el Mundo)",
     url: "https://iptv-org.github.io/iptv/languages/spa.m3u"
@@ -40,9 +35,9 @@ const CATALOGS = [
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "8.0.0",
+  version: "8.2.0",
   name: "Global Live TV - Massive",
-  description: "Acceso masivo a más de 10,000+ canales de televisión en vivo globales y regionales.",
+  description: "Acceso masivo a miles de canales de televisión en vivo globales y regionales.",
   resources: ["catalog", "meta", "stream"],
   types: ["tv"],
   idPrefixes: ["gltv:"],
@@ -99,7 +94,7 @@ function parseM3U(text) {
 
 async function downloadPlaylist(catalog) {
   const response = await fetch(catalog.url, {
-    signal: AbortSignal.timeout(30000),
+    signal: AbortSignal.timeout(20000),
     headers: { 
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" 
     }
@@ -118,18 +113,16 @@ async function refreshCatalogsInBackground() {
   refreshPromise = (async () => {
     const updated = new Map();
 
-    await Promise.all(
-      CATALOGS.map(async (catalog) => {
-        try {
-          const channels = await downloadPlaylist(catalog);
-          updated.set(catalog.id, channels);
-          console.log(`[Global Live TV] ${catalog.name}: ${channels.length} canales cargados.`);
-        } catch (error) {
-          console.error(`Error cargando ${catalog.name}: ${error.message}`);
-          updated.set(catalog.id, cache.get(catalog.id) || []);
-        }
-      })
-    );
+    for (const catalog of CATALOGS) {
+      try {
+        const channels = await downloadPlaylist(catalog);
+        updated.set(catalog.id, channels);
+        console.log(`[Global Live TV] ${catalog.name}: ${channels.length} canales cargados.`);
+      } catch (error) {
+        console.error(`Error cargando ${catalog.name}: ${error.message}`);
+        updated.set(catalog.id, cache.get(catalog.id) || []);
+      }
+    }
 
     cache = updated;
     lastRefresh = Date.now();
@@ -279,4 +272,9 @@ builder.defineStreamHandler(async ({ type, id }) => {
   };
 });
 
-getCatalogs().catch
+// Iniciar servidor HTTP al instante para pasar el health check del deploy
+serveHTTP(builder.getInterface(), { port: PORT });
+console.log(`Global Live TV v8.2.0 iniciado en el puerto ${PORT}`);
+
+// Descarga inicial de listas en segundo plano
+refreshCatalogsInBackground().catch((err) => console.error("Error en carga de fondo:", err));
