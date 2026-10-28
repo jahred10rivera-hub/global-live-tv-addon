@@ -4,183 +4,197 @@ import { addonBuilder, serveHTTP } from "stremio-addon-sdk";
 const PORT = Number(process.env.PORT || 7000);
 const CACHE_MS = 15 * 60 * 1000;
 
-const PLAYLISTS = {
-  pr: [
-    {
-      id: "live_pr",
-      name: "Puerto Rico",
-      url: "https://iptv-org.github.io/iptv/countries/pr.m3u"
-    }
-  ],
-  us: [
-    {
-      id: "live_us",
-      name: "Estados Unidos",
-      url: "https://iptv-org.github.io/iptv/countries/us.m3u"
-    }
-  ],
-  states: [
-    ["ca", "California"],
-    ["ny", "New York"],
-    ["fl", "Florida"],
-    ["tx", "Texas"],
-    ["il", "Illinois"],
-    ["ga", "Georgia"],
-    ["nj", "New Jersey"],
-    ["pa", "Pennsylvania"],
-    ["wa", "Washington"],
-    ["ma", "Massachusetts"],
-    ["oh", "Ohio"]
-  ].map(([code, name]) => ({
-    id: `live_us_${code}`,
-    name,
-    url: `https://iptv-org.github.io/iptv/subdivisions/us-${code}.m3u`
-  }))
-};
-
 const CATALOGS = [
-  ...PLAYLISTS.pr,
-  ...PLAYLISTS.us,
-  ...PLAYLISTS.states
+  {
+    id: "live_pr",
+    name: "Puerto Rico",
+    url: "https://iptv-org.github.io/iptv/countries/pr.m3u"
+  },
+  {
+    id: "live_us",
+    name: "Estados Unidos",
+    url: "https://iptv-org.github.io/iptv/countries/us.m3u"
+  },
+  {
+    id: "live_us_ca",
+    name: "California",
+    url: "https://iptv-org.github.io/iptv/subdivisions/us-ca.m3u"
+  },
+  {
+    id: "live_us_fl",
+    name: "Florida",
+    url: "https://iptv-org.github.io/iptv/subdivisions/us-fl.m3u"
+  },
+  {
+    id: "live_us_ny",
+    name: "New York",
+    url: "https://iptv-org.github.io/iptv/subdivisions/us-ny.m3u"
+  },
+  {
+    id: "live_us_tx",
+    name: "Texas",
+    url: "https://iptv-org.github.io/iptv/subdivisions/us-tx.m3u"
+  }
 ];
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "6.0.0",
+  version: "6.0.1",
   name: "Global Live TV",
-  description:
-    "Televisión en vivo de Puerto Rico y Estados Unidos desde listas M3U públicas.",
+  description: "Canales de televisión en vivo de listas M3U públicas.",
   resources: ["catalog", "meta", "stream"],
   types: ["tv"],
   idPrefixes: ["gltv:"],
   catalogs: CATALOGS.map((catalog) => ({
     type: "tv",
     id: catalog.id,
-    name: catalog.name,
-    extra: [{ name: "search", isRequired: false }]
+    name: catalog.name
   }))
 };
 
 const builder = new addonBuilder(manifest);
 
-let cachedAt = 0;
-let cachedCatalogs = new Map();
+let cache = new Map();
+let lastRefresh = 0;
+let refreshPromise = null;
 
-function parseM3U(text, catalog) {
-  const lines = text.split(/\r?\n/);
-  const channels = [];
+function parseM3U(text) {
+  const result = [];
   let current = null;
 
-  for (const rawLine of lines) {
-    const line = rawLine.trim();
+  for (const raw of text.split(/\r?\n/)) {
+    const line = raw.trim();
     if (!line) continue;
 
     if (line.startsWith("#EXTINF:")) {
       const comma = line.indexOf(",");
-      const attributes = comma >= 0 ? line.slice(0, comma) : line;
+      const header = comma >= 0 ? line.slice(0, comma) : line;
       const name = comma >= 0
         ? line.slice(comma + 1).trim()
         : "Canal sin nombre";
 
-      const getAttribute = (key) => {
-        const match = attributes.match(
-          new RegExp(`(?:^|\\\\s)${key}="([^"]*)"`, "i")
+      const attribute = (key) => {
+        const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        const match = header.match(
+          new RegExp(escapedKey + '="([^"]*)"', "i")
         );
-        return match?.[1] || "";
+        return match ? match[1] : "";
       };
 
       current = {
         name: name || "Canal sin nombre",
-        logo: getAttribute("tvg-logo"),
-        group: getAttribute("group-title") || catalog.name,
+        logo: attribute("tvg-logo"),
+        group: attribute("group-title") || "Televisión en vivo",
         url: ""
       };
     } else if (!line.startsWith("#") && current) {
       if (/^https?:\/\//i.test(line)) {
         current.url = line;
-        channels.push(current);
+        result.push(current);
       }
       current = null;
     }
   }
 
-  return channels;
+  return result;
 }
 
-async function loadCatalog(catalog) {
+async function downloadPlaylist(catalog) {
   const response = await fetch(catalog.url, {
-    headers: { "User-Agent": "GlobalLiveTV/6.0" },
-    signal: AbortSignal.timeout(15000)
+    signal: AbortSignal.timeout(15000),
+    headers: {
+      "User-Agent": "GlobalLiveTV/6.0.1"
+    }
   });
 
   if (!response.ok) {
-    throw new Error(`HTTP ${response.status} en ${catalog.url}`);
+    throw new Error(`HTTP ${response.status}`);
   }
 
-  const text = await response.text();
-  return parseM3U(text, catalog);
+  return parseM3U(await response.text());
 }
 
-async function refreshCatalogs() {
-  if (Date.now() - cachedAt < CACHE_MS && cachedCatalogs.size) {
-    return cachedCatalogs;
+async function getCatalogs() {
+  if (cache.size && Date.now() - lastRefresh < CACHE_MS) {
+    return cache;
   }
 
-  const next = new Map();
+  if (refreshPromise) return refreshPromise;
 
-  await Promise.all(CATALOGS.map(async (catalog) => {
-    try {
-      const channels = await loadCatalog(catalog);
-      next.set(catalog.id, channels);
-      console.log(`${catalog.name}: ${channels.length} canales`);
-    } catch (error) {
-      console.error(
-        `No se pudo actualizar ${catalog.name}: ${error.message}`
-      );
-      next.set(catalog.id, []);
-    }
-  }));
+  refreshPromise = (async () => {
+    const updated = new Map();
 
-  cachedCatalogs = next;
-  cachedAt = Date.now();
-  return cachedCatalogs;
-}
+    await Promise.all(
+      CATALOGS.map(async (catalog) => {
+        try {
+          const channels = await downloadPlaylist(catalog);
+          updated.set(catalog.id, channels);
+          console.log(`${catalog.name}: ${channels.length} canales`);
+        } catch (error) {
+          console.error(
+            `Error cargando ${catalog.name}: ${error.message}`
+          );
+          updated.set(catalog.id, cache.get(catalog.id) || []);
+        }
+      })
+    );
 
-function makeId(channel, catalog) {
-  const payload = {
-    n: channel.name,
-    u: channel.url,
-    l: channel.logo,
-    g: channel.group,
-    c: catalog.name
-  };
-
-  return "gltv:" + Buffer.from(JSON.stringify(payload)).toString("base64url");
-}
-
-function decodeId(id) {
-  if (!id.startsWith("gltv:")) return null;
+    cache = updated;
+    lastRefresh = Date.now();
+    return cache;
+  })();
 
   try {
-    return JSON.parse(
+    return await refreshPromise;
+  } finally {
+    refreshPromise = null;
+  }
+}
+
+function encodeChannel(channel, catalog) {
+  const data = {
+    name: channel.name,
+    url: channel.url,
+    logo: channel.logo,
+    group: channel.group,
+    country: catalog.name
+  };
+
+  return "gltv:" + Buffer.from(JSON.stringify(data)).toString("base64url");
+}
+
+function decodeChannel(id) {
+  if (typeof id !== "string" || !id.startsWith("gltv:")) {
+    return null;
+  }
+
+  try {
+    const data = JSON.parse(
       Buffer.from(id.slice(5), "base64url").toString("utf8")
     );
+
+    if (typeof data.url !== "string") return null;
+    if (!/^https?:\/\//i.test(data.url)) return null;
+
+    return data;
   } catch {
     return null;
   }
 }
 
-function toMeta(channel, catalog) {
+function makeMeta(channel, catalog) {
   const meta = {
-    id: makeId(channel, catalog),
+    id: encodeChannel(channel, catalog),
     type: "tv",
     name: channel.name,
-    description: `${catalog.name} · ${channel.group || "Televisión en vivo"}`,
-    poster: channel.logo || undefined,
+    description: `${catalog.name} · ${channel.group}`,
     posterShape: "landscape"
   };
 
-  if (!meta.poster) delete meta.poster;
+  if (channel.logo && /^https?:\/\//i.test(channel.logo)) {
+    meta.poster = channel.logo;
+  }
+
   return meta;
 }
 
@@ -190,70 +204,71 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
   const catalog = CATALOGS.find((item) => item.id === id);
   if (!catalog) return { metas: [] };
 
-  const catalogs = await refreshCatalogs();
-  let channels = catalogs.get(id) || [];
+  const all = await getCatalogs();
+  let channels = all.get(id) || [];
 
-  const search = String(extra?.search || "").trim().toLowerCase();
-  if (search) {
+  const query = String(extra?.search || "").trim().toLowerCase();
+
+  if (query) {
     channels = channels.filter((channel) =>
-      channel.name.toLowerCase().includes(search)
+      channel.name.toLowerCase().includes(query)
     );
   }
 
-  const seen = new Set();
-  const metas = [];
+  const unique = new Map();
 
   for (const channel of channels) {
     const key = `${channel.name.toLowerCase()}|${channel.url}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    metas.push(toMeta(channel, catalog));
+    if (!unique.has(key)) unique.set(key, channel);
   }
 
-  return { metas: metas.slice(0, 300) };
+  return {
+    metas: [...unique.values()]
+      .slice(0, 300)
+      .map((channel) => makeMeta(channel, catalog))
+  };
 });
 
 builder.defineMetaHandler(async ({ type, id }) => {
   if (type !== "tv") return { meta: null };
 
-  const channel = decodeId(id);
-  if (!channel?.u || !/^https?:\/\//i.test(channel.u)) {
-    return { meta: null };
+  const channel = decodeChannel(id);
+  if (!channel) return { meta: null };
+
+  const meta = {
+    id,
+    type: "tv",
+    name: channel.name || "Canal en vivo",
+    description: `${channel.country || "Global Live TV"} · ${channel.group || ""}`,
+    posterShape: "landscape"
+  };
+
+  if (channel.logo && /^https?:\/\//i.test(channel.logo)) {
+    meta.poster = channel.logo;
   }
 
-  return {
-    meta: {
-      id,
-      type: "tv",
-      name: channel.n || "Canal en vivo",
-      description: `${channel.c || "Global Live TV"} · ${channel.g || "Televisión"}`,
-      poster: channel.l || undefined,
-      posterShape: "landscape"
-    }
-  };
+  return { meta };
 });
 
 builder.defineStreamHandler(async ({ type, id }) => {
   if (type !== "tv") return { streams: [] };
 
-  const channel = decodeId(id);
-  if (!channel?.u || !/^https?:\/\//i.test(channel.u)) {
-    return { streams: [] };
-  }
+  const channel = decodeChannel(id);
+  if (!channel) return { streams: [] };
 
   return {
     streams: [
       {
         name: "Global Live TV",
-        title: channel.n || "Canal en vivo",
-        url: channel.u
+        title: channel.name || "Canal en vivo",
+        url: channel.url
       }
     ]
   };
 });
 
-const addon = builder.getInterface();
+const addonInterface = builder.getInterface();
 
-serveHTTP(addon, { port: PORT });
+serveHTTP(addonInterface, { port: PORT });
 
-console.log(`Global Live TV listo en el puerto ${PORT}`);
+console.log(`Global Live TV iniciado en el puerto ${PORT}`);
