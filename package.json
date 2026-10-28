@@ -1,6 +1,6 @@
 {
   "name": "global-live-tv-addon",
-  "version": "8.2.0",
+  "version": "8.4.1",
   "description": "Global Live TV Stremio Addon",
   "main": "index.js",
   "type": "module",
