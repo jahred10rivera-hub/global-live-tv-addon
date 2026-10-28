@@ -5,7 +5,7 @@ const { addonBuilder, serveHTTP } = sdk;
 const PORT = Number(process.env.PORT || 7000);
 const CACHE_MS = 30 * 60 * 1000;
 const REQUEST_TIMEOUT_MS = 20000;
-const USER_AGENT = "GlobalLiveTV/8.4.2 (+https://github.com/jahred10rivera-hub/global-live-tv-addon)";
+const USER_AGENT = "GlobalLiveTV/8.4.3 (+https://github.com/jahred10rivera-hub/global-live-tv-addon)";
 
 const CATALOGS = [
   { id: "live_us", name: "🇺🇸 Estados Unidos (Todos)", url: "https://iptv-org.github.io/iptv/countries/us.m3u" },
@@ -19,7 +19,7 @@ const CATALOGS = [
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "8.4.2",
+  version: "8.4.3",
   name: "Global Live TV - Massive US",
   description: "Acceso a canales de televisión en vivo globales y regionales.",
   resources: ["catalog", "meta", "stream"],
@@ -240,10 +240,12 @@ builder.defineStreamHandler(async ({ type, id }) => {
       url: channel.url,
       behaviorHints: {
         notResponseLocation: true,
-        proxyHeaders: { request: {
-          "User-Agent": channel.userAgent || USER_AGENT,
-          ...(channel.referrer ? { Referer: channel.referrer } : {})
-        } }
+        ...((channel.userAgent || channel.referrer) ? {
+          proxyHeaders: { request: {
+            ...(channel.userAgent ? { "User-Agent": channel.userAgent } : {}),
+            ...(channel.referrer ? { Referer: channel.referrer } : {})
+          } }
+        } : {})
       }
     }]
   };
@@ -252,7 +254,7 @@ builder.defineStreamHandler(async ({ type, id }) => {
 // Start HTTP immediately; do not make deploy health checks wait for playlist downloads.
 try {
   serveHTTP(builder.getInterface(), { port: PORT });
-  console.log(`[Global Live TV] v8.4.2 iniciado en el puerto ${PORT}`);
+  console.log(`[Global Live TV] v8.4.3 iniciado en el puerto ${PORT}`);
 } catch (error) {
   console.error("[Global Live TV] No se pudo iniciar el servidor HTTP:", error);
   process.exitCode = 1;
