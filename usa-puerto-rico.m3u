@@ -1,0 +1,65 @@
+#EXTM3U
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WIPRTV61.pr@HD",WIPR Puerto Rico
+https://streamwipr.pr/hls/stream/index.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="TeleOnce.pr@HD",TeleOnce
+https://live.11-cdn.com/TeleOnce/3fc63fe00050c646635f16b071cd33e2.sdp/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="Telemundo.us@WKAQTV",Telemundo Puerto Rico
+https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream1/master.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WKAQTV22.pr@HD",Telemundo PR 2.2
+https://nbculocallive.akamaized.net/hls/live/2037499/puertorico/stream2/master.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="LaX.pr@SD",La X
+https://stream.eleden.com/livelax/ngrp:livelax_all/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="RadioIslaTV.pr@SD",Radio Isla TV
+https://59a564764e2b6.streamlock.net/palestra/palestra/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="Telenorte.pr@SD",Telenorte
+https://627bb251f23c7.streamlock.net:444/TopRadioTV/TopRadioTV/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WAPATV41.pr@HD",WAPA TV
+https://wapa-updater.onrender.com/WAPA-TV-4-1.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WWXYDT1.pr@SD",Boricua TV
+https://2-fss-2.streamhoster.com/pl_138/amlst:201284-1347630/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WXWZLD231.pr@HD",Más TV Canal 23
+https://5bf8041cb3fed.streamlock.net/mastvpr/mastvpr/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="AmericaTeVe.pr@SD",América TeVé
+https://live.gideo.video/americateve2/master.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="BuenaTV.pr@SD",Buena TV
+https://59825a54e4454.streamlock.net:8443/papo351/papo351/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="CandelitaTV.pr@SD",Candelita TV
+https://6110f70ea8d0e.streamlock.net/1689/1689/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="DNJTV.pr@SD",DNJ TV
+https://cloud2.streaminglivehd.com:1936/dnjv2/dnjv2/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="FamiliaVisionHD.pr@SD",Familia Visión
+https://584097344c1f0.streamlock.net/29/stream/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="FarodeSantidadTV.pr@SD",Faro de Santidad TV
+https://5dbcd1053301e.streamlock.net:4443/farodesantidad/farodesantidad/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="NuevaVidaFM.pr@SD",Nueva Vida TV
+https://stream.nuevavidafm.net:3937/live/nuevavidalive.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="ParaisoTV.pr@SD",Paraíso TV
+https://stream.eleden.com/livewtpm/ngrp:livewtpm_all/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="SalvacionTV.pr@SD",Salvación TV
+https://stream.eleden.com/livesalvatv/ngrp:livesalvatv_all/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="TheRetroChannel.pr@SD",The Retro Channel
+https://583ed2f226ac2.streamlock.net/theretrochannel/stream/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WECN.pr@SD",Único TV
+https://59825a54e4454.streamlock.net:8443/pastorairisn394/pastorairisn394/chunklist_w239411719.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WDWL581.pr@HD",Enlace PR
+https://67acccf130420.streamlock.net/enlacepr1/enlacepr1/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="EBNTelevision.pr@WIDP",EBN Television
+https://627bb251f23c7.streamlock.net:444/EBNTELEVISION/EBNTELEVISION/playlist.m3u8
+#EXTINF:-1 group-title="🇵🇷 Puerto Rico" tvg-id="WRUADT1.pr@SD",Tiva TV
+https://link.frontlayer.com/services/hls2/fl496518/index.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • News & Public",NASA TV Public
+https://ntv1.akamaized.net/hls/live/2016315/NASA-NTV1-Public/master.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • News & Public",NASA TV Media
+https://ntv1.akamaized.net/hls/live/2016315/NASA-NTV1-Media/master.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Weather",Alabama Weather Network
+https://alwxnet-ott-proxy.cloud9streaming.com/alwxnet/live/playlist.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Entertainment",AfroLandTV
+https://alt-al.otteravision.com/alt/al/al.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Entertainment",Amazing Facts TV
+https://hlspackager.akamaized.net/live/DB/AMAZING_FACTS/HLS/AMAZING_FACTS.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Entertainment",AKC TV
+https://broadcast.blivenyc.com/speed/broadcast/22/desktop-playlist.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Entertainment",AKC TV Puppies
+https://install.akctvcontrol.com/speed/broadcast/140/desktop-playlist.m3u8
+#EXTINF:-1 group-title="🇺🇸 USA • Entertainment",AWE Plus
+https://a-cdn.herringnetwork.com/affiliate/awee/playlist.m3u8
