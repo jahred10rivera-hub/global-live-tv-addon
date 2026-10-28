@@ -1,5 +1,7 @@
 
-import { addonBuilder, serveHTTP } from "stremio-addon-sdk";
+import sdk from "stremio-addon-sdk";
+
+const { addonBuilder, serveHTTP } = sdk;
 
 const PORT = Number(process.env.PORT || 7000);
 const CACHE_MS = 15 * 60 * 1000;
@@ -39,7 +41,7 @@ const CATALOGS = [
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "6.0.1",
+  version: "6.0.2",
   name: "Global Live TV",
   description: "Canales de televisión en vivo de listas M3U públicas.",
   resources: ["catalog", "meta", "stream"],
@@ -59,11 +61,11 @@ let lastRefresh = 0;
 let refreshPromise = null;
 
 function parseM3U(text) {
-  const result = [];
+  const channels = [];
   let current = null;
 
-  for (const raw of text.split(/\r?\n/)) {
-    const line = raw.trim();
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim();
     if (!line) continue;
 
     if (line.startsWith("#EXTINF:")) {
@@ -73,38 +75,35 @@ function parseM3U(text) {
         ? line.slice(comma + 1).trim()
         : "Canal sin nombre";
 
-      const attribute = (key) => {
-        const escapedKey = key.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+      function getAttribute(key) {
         const match = header.match(
-          new RegExp(escapedKey + '="([^"]*)"', "i")
+          new RegExp(key + '="([^"]*)"', "i")
         );
         return match ? match[1] : "";
-      };
+      }
 
       current = {
         name: name || "Canal sin nombre",
-        logo: attribute("tvg-logo"),
-        group: attribute("group-title") || "Televisión en vivo",
+        logo: getAttribute("tvg-logo"),
+        group: getAttribute("group-title") || "Televisión en vivo",
         url: ""
       };
     } else if (!line.startsWith("#") && current) {
       if (/^https?:\/\//i.test(line)) {
         current.url = line;
-        result.push(current);
+        channels.push(current);
       }
       current = null;
     }
   }
 
-  return result;
+  return channels;
 }
 
 async function downloadPlaylist(catalog) {
   const response = await fetch(catalog.url, {
     signal: AbortSignal.timeout(15000),
-    headers: {
-      "User-Agent": "GlobalLiveTV/6.0.1"
-    }
+    headers: { "User-Agent": "GlobalLiveTV/6.0.2" }
   });
 
   if (!response.ok) {
@@ -204,14 +203,14 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
   const catalog = CATALOGS.find((item) => item.id === id);
   if (!catalog) return { metas: [] };
 
-  const all = await getCatalogs();
-  let channels = all.get(id) || [];
+  const catalogs = await getCatalogs();
+  let channels = catalogs.get(id) || [];
 
-  const query = String(extra?.search || "").trim().toLowerCase();
+  const search = String(extra?.search || "").trim().toLowerCase();
 
-  if (query) {
+  if (search) {
     channels = channels.filter((channel) =>
-      channel.name.toLowerCase().includes(query)
+      channel.name.toLowerCase().includes(search)
     );
   }
 
@@ -257,18 +256,14 @@ builder.defineStreamHandler(async ({ type, id }) => {
   if (!channel) return { streams: [] };
 
   return {
-    streams: [
-      {
-        name: "Global Live TV",
-        title: channel.name || "Canal en vivo",
-        url: channel.url
-      }
-    ]
+    streams: [{
+      name: "Global Live TV",
+      title: channel.name || "Canal en vivo",
+      url: channel.url
+    }]
   };
 });
 
-const addonInterface = builder.getInterface();
-
-serveHTTP(addonInterface, { port: PORT });
+serveHTTP(builder.getInterface(), { port: PORT });
 
 console.log(`Global Live TV iniciado en el puerto ${PORT}`);
