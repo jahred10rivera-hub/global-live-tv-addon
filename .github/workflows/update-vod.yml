@@ -1,0 +1,37 @@
+name: Update free VOD playlists
+
+on:
+  schedule:
+    - cron: "23 8 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  update-vod:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Download upstream public-domain playlists
+        run: |
+          set -euo pipefail
+          curl -fL --retry 3 "https://raw.githubusercontent.com/OnlineM3U/publicdomainm3u/main/movies.m3u" -o vod-peliculas.m3u
+          curl -fL --retry 3 "https://raw.githubusercontent.com/OnlineM3U/publicdomainm3u/main/series.m3u" -o vod-series.m3u
+          {
+            printf '#EXTM3U\n'
+            tail -n +2 vod-peliculas.m3u
+            tail -n +2 vod-series.m3u
+          } > vod-gratis.m3u
+      - name: Commit playlist updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add vod-peliculas.m3u vod-series.m3u vod-gratis.m3u
+          if git diff --cached --quiet; then
+            echo "No playlist changes."
+          else
+            git commit -m "Auto-update free public-domain VOD playlists"
+            git push
+          fi
