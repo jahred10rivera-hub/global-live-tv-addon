@@ -3,52 +3,46 @@ import sdk from "stremio-addon-sdk";
 const { addonBuilder, serveHTTP } = sdk;
 
 const PORT = Number(process.env.PORT || 7000);
-const CACHE_MS = 30 * 60 * 1000; // 30 minutos de caché
+const CACHE_MS = 30 * 60 * 1000;
 
-// Catálogos ampliados para superar los 7,000+ canales con fuentes oficiales de iptv-org
 const CATALOGS = [
   {
+    id: "live_all",
+    name: "🌍 Todos los Canales (Global)",
+    url: "https://iptv-org.github.io/iptv/index.m3u"
+  },
+  {
     id: "live_spa",
-    name: "Español (Global)",
+    name: "🗣️ Español (Todo el Mundo)",
     url: "https://iptv-org.github.io/iptv/languages/spa.m3u"
   },
   {
-    id: "live_mx",
-    name: "México",
-    url: "https://iptv-org.github.io/iptv/countries/mx.m3u"
+    id: "live_latam",
+    name: "📺 Latinoamérica",
+    url: "https://iptv-org.github.io/iptv/regions/latam.m3u"
   },
   {
-    id: "live_es",
-    name: "España",
-    url: "https://iptv-org.github.io/iptv/countries/es.m3u"
+    id: "live_news",
+    name: "📰 Noticias (Global)",
+    url: "https://iptv-org.github.io/iptv/categories/news.m3u"
   },
   {
-    id: "live_ar",
-    name: "Argentina",
-    url: "https://iptv-org.github.io/iptv/countries/ar.m3u"
+    id: "live_sports",
+    name: "⚽ Deportes (Global)",
+    url: "https://iptv-org.github.io/iptv/categories/sports.m3u"
   },
   {
-    id: "live_co",
-    name: "Colombia",
-    url: "https://iptv-org.github.io/iptv/countries/co.m3u"
-  },
-  {
-    id: "live_pr",
-    name: "Puerto Rico",
-    url: "https://iptv-org.github.io/iptv/countries/pr.m3u"
-  },
-  {
-    id: "live_us",
-    name: "Estados Unidos",
-    url: "https://iptv-org.github.io/iptv/countries/us.m3u"
+    id: "live_movies",
+    name: "🎬 Cine y Series",
+    url: "https://iptv-org.github.io/iptv/categories/movies.m3u"
   }
 ];
 
 const manifest = {
   id: "org.community.global-live-tv",
-  version: "7.0.0",
-  name: "Global Live TV",
-  description: "Más de 7,000 canales de televisión en vivo de listas M3U públicas.",
+  version: "8.0.0",
+  name: "Global Live TV - Massive",
+  description: "Acceso masivo a más de 10,000+ canales de televisión en vivo globales y regionales.",
   resources: ["catalog", "meta", "stream"],
   types: ["tv"],
   idPrefixes: ["gltv:"],
@@ -65,7 +59,6 @@ let cache = new Map();
 let lastRefresh = 0;
 let refreshPromise = null;
 
-// Expresiones regulares pre-compiladas para velocidad de procesamiento máxima
 const LOGO_REGEX = /tvg-logo="([^"]*)"/i;
 const GROUP_REGEX = /group-title="([^"]*)"/i;
 
@@ -89,7 +82,7 @@ function parseM3U(text) {
       current = {
         name: name || "Canal sin nombre",
         logo: logoMatch ? logoMatch[1] : "",
-        group: groupMatch ? groupMatch[1] : "Televisión en vivo",
+        group: groupMatch ? groupMatch[1] : "General",
         url: ""
       };
     } else if (!line.startsWith("#") && current) {
@@ -106,7 +99,7 @@ function parseM3U(text) {
 
 async function downloadPlaylist(catalog) {
   const response = await fetch(catalog.url, {
-    signal: AbortSignal.timeout(15000), // 15s de timeout por lista grande
+    signal: AbortSignal.timeout(30000),
     headers: { 
       "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36" 
     }
@@ -119,7 +112,6 @@ async function downloadPlaylist(catalog) {
   return parseM3U(await response.text());
 }
 
-// Refresco en segundo plano ("Stale-While-Revalidate")
 async function refreshCatalogsInBackground() {
   if (refreshPromise) return refreshPromise;
 
@@ -212,7 +204,6 @@ function makeMeta(channel, catalog) {
   return meta;
 }
 
-// Manejador de catálogo con soporte de paginación (extra.skip)
 builder.defineCatalogHandler(async ({ type, id, extra }) => {
   if (type !== "tv") return { metas: [] };
 
@@ -230,7 +221,6 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
     );
   }
 
-  // Filtrar canales duplicados únicos
   const unique = new Map();
   for (let i = 0; i < channels.length; i++) {
     const channel = channels[i];
@@ -238,15 +228,8 @@ builder.defineCatalogHandler(async ({ type, id, extra }) => {
     if (!unique.has(key)) unique.set(key, channel);
   }
 
-  const allUniqueChannels = [...unique.values()];
-
-  // Paginación: Stremio envía extra.skip (ej. 0, 100, 200...) para cargar por bloques de 100
-  const skip = parseInt(extra?.skip || 0, 10);
-  const limit = 100; // 100 canales por página para máxima fluidez
-  const paginatedChannels = allUniqueChannels.slice(skip, skip + limit);
-
   return {
-    metas: paginatedChannels.map((channel) => makeMeta(channel, catalog))
+    metas: [...unique.values()].map((channel) => makeMeta(channel, catalog))
   };
 });
 
@@ -296,8 +279,4 @@ builder.defineStreamHandler(async ({ type, id }) => {
   };
 });
 
-// Pre-carga inicial al arrancar el servidor
-getCatalogs().catch((err) => console.error("Error en pre-carga de catálogos:", err));
-
-serveHTTP(builder.getInterface(), { port: PORT });
-console.log(`Global Live TV v7.0.0 con +7000 canales iniciado en el puerto ${PORT}`);
+getCatalogs().catch
