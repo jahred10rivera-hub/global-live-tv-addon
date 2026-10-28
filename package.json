@@ -1,16 +1,16 @@
 
 {
   "name": "global-live-tv-addon",
-  "version": "6.0.0",
-  "description": "Global Live TV - canales de Puerto Rico y Estados Unidos para Stremio",
-  "type": "module",
+  "version": "6.0.1",
+  "description": "Global Live TV Stremio addon",
+  "main": "index.js",
   "scripts": {
     "start": "node index.js"
   },
-  "engines": {
-    "node": ">=20"
-  },
   "dependencies": {
     "stremio-addon-sdk": "^1.6.10"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
